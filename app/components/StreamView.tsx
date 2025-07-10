@@ -6,11 +6,12 @@ import { useEffect, useState, useRef } from 'react'
 import { signOut } from 'next-auth/react'
 import axios from 'axios'
 import { Input } from '@/components/ui/input'
-import { Button} from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import { toast, Toaster } from 'react-hot-toast'
+import { set } from 'zod'
 
 interface Song {
   id: string
@@ -20,13 +21,12 @@ interface Song {
   imageUrl: string
 }
 
-//const REFRESH_INTERVAL_MS = 5 * 100000000;
-const creatorId = "93e85c8f-1eca-47df-a376-84a558f287d3"; 
+const REFRESH_INTERVAL_MS = 2 * 1000;
 
 export default function StreamView({
-    creatorId
-}:{
-    creatorId: string
+  creatorId
+}: {
+  creatorId: string
 }) {
   const prev = useRef<string>("");
   const [videoUrl, setVideoUrl] = useState('')
@@ -34,38 +34,77 @@ export default function StreamView({
   const [queue, setQueue] = useState<Song[]>([])
   const [url, seturl] = useState<string | null>(null);
   const [all_streams, setAllStreams] = useState<any[]>([]);
+  const [curr_state, setcurrstate] = useState<any>(null);
 
-  {/*}
   useEffect(() => {
     async function handle() {
       const interval = setInterval(async () => {
-        const res = await axios.get('/api/streams/my', { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
-        if (prev != res.data.streams[0].extractedId) {
-          console.log(res.data.streams[0].extractedId);
-          prev = res.data.streams[0].extractedId;
-          seturl(res.data.streams[0].extractedId);
+        const res = await axios.get(`/api/streams/?creatorId=${creatorId}`, { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
+        const all_stream = res.data.streams;
+        const newId = all_stream[0]?.extractedId;
+        const currentStream = all_stream[0];
+    
+    // Update current stream state
+        setcurrstate(currentStream);
+        if (newId && prev.current !== newId) {
+          prev.current = newId;
+          seturl(newId);
         }
+       /*
+        if (prev.current === "") {
+          prev.current = newId;
+          seturl(newId);
+        }
+          */
+        const newQueue = all_stream.length > 0
+      ? all_stream.slice(1).map(stream => ({
+          id: stream.id,
+          title: stream.title,
+          artist: stream.id,
+          votes: stream._count.upvotes,
+          imageUrl: stream.smallImg || '/placeholder.svg?height=80&width=80'
+        }))
+      : [];
+    setQueue(newQueue);
+        setAllStreams(all_stream);
       }, REFRESH_INTERVAL_MS);
       return () => clearInterval(interval);
     }
     handle();
   }, []);
-  */}
+  /*
   useEffect(() => {
     async function handle() {
-      const res = await axios.get('/api/streams/my', { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
-      console.log("this is the data ", res.data);
-      if (prev.current != res.data.streams[0].extractedId) {
-        console.log(res.data.streams[0].extractedId);
-        prev.current = res.data.streams[0].extractedId;
-        seturl(res.data.streams[0].extractedId);
+      const res = await axios.get(`/api/streams/?creatorId=${creatorId}`, { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
+      const all_streams = res.data.streams;
+      const newId = all_streams[0]?.extractedId;
+      /*
+      if (newId && prev.current !== newId) {
+        prev.current = newId;
+        seturl(newId);
       }
+      if (prev.current === "") {
+        prev.current = newId;
+        seturl(newId);
+      }
+      const newQueue = all_streams.slice(1).map(stream => ({
+        id: stream.id,
+        title: stream.title,
+        artist: stream.id,
+        votes: stream._count.upvotes,
+        imageUrl: stream.smallImg || '/placeholder.svg?height=80&width=80'
+      }));
+      setQueue(newQueue);
+
+      setAllStreams(all_streams);
     }
     handle();
     console.log("this is new url", url);
   }, []);
+  */
 
-  const handleShare = (e:any)=>{
+
+  const handleShare = (e: any) => {
     e.preventDefault();
     const shareableLink = `${window.location.host}/creator/${creatorId}`
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -90,9 +129,9 @@ export default function StreamView({
       console.log("No videos in queue");
       return;
     }
-    const currStream = all_streams[0];
+    const currStream = curr_state;
     console.log("Deleting stream:", currStream.id);
-    const res = await axios.delete('/api/streams/delete', { data: { id: currStream.id } })
+    const res = await axios.delete(`/api/streams/delete/?creatorId=${creatorId}`, { data: { id: currStream.id } })
     if (res.status != 200) {
       console.error("Error deleting the stream");
       return;
@@ -102,6 +141,7 @@ export default function StreamView({
     setQueue(prevQueue => prevQueue.filter(song => song.id !== curr.id));
     if (curr) {
       seturl(curr.extractedId);
+      setcurrstate(curr);
       console.log("Playing next video:", curr.extractedId);
     } else {
       seturl(null);
@@ -112,7 +152,7 @@ export default function StreamView({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post('/api/streams', { url: videoUrl });
+      const res = await axios.post(`/api/streams/?creatorId=${creatorId}`, { url: videoUrl });
       console.log(res.data);
       setQueue(prevQueue => {
         const updated = [
@@ -129,7 +169,7 @@ export default function StreamView({
       });
       setVideoUrl('')
       setVideoId('');
-      const result = await axios.get('/api/streams/my', { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
+      const result = await axios.get(`/api/streams/?creatorId=${creatorId}`, { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
       setAllStreams(result.data.streams);
     } catch (error) {
       console.error('Error submitting video URL:', error);
@@ -148,29 +188,6 @@ export default function StreamView({
     const match = url.match(regex)
     return match ? match[1] : ''
   }
-
-  useEffect(() => {
-    async function handle() {
-      const res = await axios.get('/api/streams/my', { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
-      const all_streams = res.data.streams;
-      console.log(all_streams);
-      for (let i = 1; i < all_streams.length; i++) {
-        const stream = all_streams[i];
-        setQueue(prevQueue => [
-          ...prevQueue,
-          {
-            id: stream.id,
-            title: stream.title,
-            artist: stream.id,
-            votes: stream._count.upvotes,
-            imageUrl: stream.smallImg || '/placeholder.svg?height=80&width=80'
-          }
-        ]);
-      }
-      setAllStreams(all_streams);
-    }
-    handle();
-  }, []);
 
 
   const handleVote = async (id: string, increment: number) => {
@@ -193,13 +210,10 @@ export default function StreamView({
         song.id === id ? { ...song, votes: song.votes + increment } : song
       ).sort((a, b) => b.votes - a.votes)
     )
-    setAllStreams(prevallStreams => prevallStreams.map(song=> song.id === id?{...song,_count: {...song._count, upvotes: song._count.upvotes + increment}}:song).sort((a, b) => b._count.upvotes - a._count.upvotes));
+    setAllStreams(prevallStreams => prevallStreams.map(song => song.id === id ? { ...song, _count: { ...song._count, upvotes: song._count.upvotes + increment } } : song).sort((a, b) => b._count.upvotes - a._count.upvotes));
     console.log(queue)
     console.log(all_streams);
   }
-  useEffect(() => {
-    console.log("✅ url changed to:", url);
-  }, [url]);
 
 
 

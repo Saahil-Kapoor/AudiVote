@@ -1,3 +1,4 @@
+import StreamView from '@/app/components/StreamView'
 import React from 'react'
 
 export default function({
@@ -5,7 +6,7 @@ export default function({
 }){
   return (
     <div>
-      Creator ID: {creatorId}
+        <StreamView creatorId={creatorId} />
     </div>
   )
 }

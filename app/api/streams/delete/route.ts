@@ -3,8 +3,16 @@ import { prismaClient } from '@/app/lib/db'
 import { getServerSession } from "next-auth/next";
 
 export async function DELETE(req: NextRequest) {
-    const session = await getServerSession();
-
+    //const session = await getServerSession();
+    const creatorId = req.nextUrl.searchParams.get("creatorId");
+    if (!creatorId) {
+        return NextResponse.json({
+            message: "Missing creatorId"
+        }, {
+            status: 400
+        })
+    }
+    /*
     const user = await prismaClient.user.findFirst({
         where: {
             email: session?.user?.email ?? ""
@@ -18,6 +26,7 @@ export async function DELETE(req: NextRequest) {
             status: 411
         })
     }
+        */
     //console.log("this is the body",req.body)
     console.log("Deleting stream");
 
@@ -33,11 +42,11 @@ export async function DELETE(req: NextRequest) {
 
     const { id } = body
     console.log("Stream ID to delete:", id)
-    
+
     const stream = await prismaClient.stream.delete({
         where: {
             id: id,
-            userId: user.id
+            userId: creatorId ?? ''
         }
     })
 

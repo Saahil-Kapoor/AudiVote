@@ -16,8 +16,16 @@ const CreateStreamSchema = z.object({
 
 export async function POST(req: NextRequest) {
     try {
-        const session = await getServerSession();
-
+        const creatorId = req.nextUrl.searchParams.get("creatorId");
+        if (!creatorId) {
+            return NextResponse.json({
+                message: "Missing creatorId"
+            }, {
+                status: 400
+            })
+        }
+        //const session = await getServerSession();
+/*
         const user = await prismaClient.user.findFirst({
             where: {
                 email: session?.user?.email ?? ""
@@ -30,6 +38,8 @@ export async function POST(req: NextRequest) {
                 status: 411
             })
         }
+            
+        */
         //const data = CreateStreamSchema.parse(await req.json());
         const data = await req.json();
         const isYt = data.url.match(urlRegex);
@@ -49,7 +59,7 @@ export async function POST(req: NextRequest) {
         const bigImg = dt.thumbnail.thumbnails[length - 1].url;
         const stream = await prismaClient.stream.create({
             data: {
-                userId: user?.id??'',
+                userId: creatorId ?? '',
                 url: data.url,
                 title: title,
                 smallImg: smallImg,
@@ -77,13 +87,33 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-    const createrId = req.nextUrl.searchParams.get("createrId");
+    const creatorId = req.nextUrl.searchParams.get("creatorId");
+    if (!creatorId) {
+        return NextResponse.json({
+            message: "Missing creatorId"
+        }, {
+            status: 400
+        })
+    }
     const streams = await prismaClient.stream.findMany({
         where: {
-            userId: createrId ?? ""
+            userId: creatorId ?? ""
+        },
+        include: {
+            _count: {
+                select: {
+                    upvotes: true
+                }
+            },
+            upvotes: true
+        },
+        orderBy: {
+            upvotes: {
+                _count: 'desc'
+            }
         }
     })
-    console.log(streams);
+    //console.log(streams);
     return NextResponse.json({
         streams: streams
     })
