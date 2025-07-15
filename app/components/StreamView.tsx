@@ -12,6 +12,8 @@ import { ChevronUp, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import { toast, Toaster } from 'react-hot-toast'
 import { set } from 'zod'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation';
 
 interface Song {
   id: string
@@ -35,37 +37,39 @@ export default function StreamView({
   const [url, seturl] = useState<string | null>(null);
   const [all_streams, setAllStreams] = useState<any[]>([]);
   const [curr_state, setcurrstate] = useState<any>(null);
+  const session = useSession();
+  const router = useRouter();
 
   useEffect(() => {
     async function handle() {
       const interval = setInterval(async () => {
-        const res = await axios.get(`/api/streams/?creatorId=${creatorId}`, { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
+        const res = await axios.get(`/api/streams/?creatorId=${creatorId}`);
         const all_stream = res.data.streams;
         const newId = all_stream[0]?.extractedId;
         const currentStream = all_stream[0];
-    
-    // Update current stream state
+
+        // Update current stream state
         setcurrstate(currentStream);
         if (newId && prev.current !== newId) {
           prev.current = newId;
           seturl(newId);
         }
-       /*
-        if (prev.current === "") {
-          prev.current = newId;
-          seturl(newId);
-        }
-          */
+        /*
+         if (prev.current === "") {
+           prev.current = newId;
+           seturl(newId);
+         }
+           */
         const newQueue = all_stream.length > 0
-      ? all_stream.slice(1).map(stream => ({
-          id: stream.id,
-          title: stream.title,
-          artist: stream.id,
-          votes: stream._count.upvotes,
-          imageUrl: stream.smallImg || '/placeholder.svg?height=80&width=80'
-        }))
-      : [];
-    setQueue(newQueue);
+          ? all_stream.slice(1).map(stream => ({
+            id: stream.id,
+            title: stream.title,
+            artist: stream.id,
+            votes: stream._count.upvotes,
+            imageUrl: stream.smallImg || '/placeholder.svg?height=80&width=80'
+          }))
+          : [];
+        setQueue(newQueue);
         setAllStreams(all_stream);
       }, REFRESH_INTERVAL_MS);
       return () => clearInterval(interval);
@@ -169,7 +173,7 @@ export default function StreamView({
       });
       setVideoUrl('')
       setVideoId('');
-      const result = await axios.get(`/api/streams/?creatorId=${creatorId}`, { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
+      const result = await axios.get(`/api/streams/?creatorId=${creatorId}`);
       setAllStreams(result.data.streams);
     } catch (error) {
       console.error('Error submitting video URL:', error);
@@ -192,14 +196,14 @@ export default function StreamView({
 
   const handleVote = async (id: string, increment: number) => {
     if (increment == 1) {
-      const res = await axios.post('/api/streams/upvote', { streamId: id }, { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
+      const res = await axios.post('/api/streams/upvote', { streamId: id });
       if (res.status != 201) {
         console.error("Error upvoting the song");
         return;
       }
     }
     else if (increment == -1) {
-      const res = await axios.post('/api/streams/downvote', { streamId: id }, { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
+      const res = await axios.post('/api/streams/downvote', { streamId: id });
       if (res.status != 201) {
         console.error("Error downvoting the song");
         return;
@@ -329,8 +333,6 @@ export default function StreamView({
           )}
 
         </>
-
-        <Button onClick={() => signOut()}>logout</Button>
         <Toaster />
       </div>
     </div>
