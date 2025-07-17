@@ -1,9 +1,5 @@
 "use client"
-import SongSubmission from '@/app/components/SongSubmission'
-import VotingQueue from '@/app/components/VotingQueue'
-import CurrentlyPlaying from '@/app/components/CurrentlyPlaying'
 import { useEffect, useState, useRef } from 'react'
-import { signOut } from 'next-auth/react'
 import axios from 'axios'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -11,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import { toast, Toaster } from 'react-hot-toast'
-import { set } from 'zod'
-import { useSession } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation';
+import YouTube from 'react-youtube';
 
 interface Song {
   id: string
@@ -23,7 +19,7 @@ interface Song {
   imageUrl: string
 }
 
-const REFRESH_INTERVAL_MS = 2 * 1000;
+const REFRESH_INTERVAL_MS =1000;
 
 export default function StreamView({
   creatorId
@@ -48,18 +44,11 @@ export default function StreamView({
         const newId = all_stream[0]?.extractedId;
         const currentStream = all_stream[0];
 
-        // Update current stream state
         setcurrstate(currentStream);
         if (newId && prev.current !== newId) {
           prev.current = newId;
           seturl(newId);
         }
-        /*
-         if (prev.current === "") {
-           prev.current = newId;
-           seturl(newId);
-         }
-           */
         const newQueue = all_stream.length > 0
           ? all_stream.slice(1).map(stream => ({
             id: stream.id,
@@ -76,36 +65,6 @@ export default function StreamView({
     }
     handle();
   }, []);
-  /*
-  useEffect(() => {
-    async function handle() {
-      const res = await axios.get(`/api/streams/?creatorId=${creatorId}`, { headers: { "Authorization": `Bearer ${process.env.AUTH_SECRET}` } });
-      const all_streams = res.data.streams;
-      const newId = all_streams[0]?.extractedId;
-      /*
-      if (newId && prev.current !== newId) {
-        prev.current = newId;
-        seturl(newId);
-      }
-      if (prev.current === "") {
-        prev.current = newId;
-        seturl(newId);
-      }
-      const newQueue = all_streams.slice(1).map(stream => ({
-        id: stream.id,
-        title: stream.title,
-        artist: stream.id,
-        votes: stream._count.upvotes,
-        imageUrl: stream.smallImg || '/placeholder.svg?height=80&width=80'
-      }));
-      setQueue(newQueue);
-
-      setAllStreams(all_streams);
-    }
-    handle();
-    console.log("this is new url", url);
-  }, []);
-  */
 
 
   const handleShare = (e: any) => {
@@ -131,7 +90,7 @@ export default function StreamView({
     console.log("This is queue", all_streams);
     if (all_streams.length == 0) {
       console.log("No videos in queue");
-      return;
+      return false;
     }
     const currStream = curr_state;
     console.log("Deleting stream:", currStream.id);
@@ -195,35 +154,87 @@ export default function StreamView({
 
 
   const handleVote = async (id: string, increment: number) => {
-    if (increment == 1) {
+  if (increment === 1) {
+    try {
       const res = await axios.post('/api/streams/upvote', { streamId: id });
-      if (res.status != 201) {
-        console.error("Error upvoting the song");
-        return;
-      }
+      toast.success("Upvote recorded!", {
+        position: 'top-right',
+        duration: 2000,
+      });
+
+      setQueue(prevQueue =>
+        prevQueue.map(song =>
+          song.id === id ? { ...song, votes: song.votes + 1 } : song
+        ).sort((a, b) => b.votes - a.votes)
+      );
+      setAllStreams(prevAllStreams =>
+        prevAllStreams.map(song =>
+          song.id === id
+            ? {
+                ...song,
+                _count: {
+                  ...song._count,
+                  upvotes: song._count.upvotes + 1,
+                },
+              }
+            : song
+        ).sort((a, b) => b._count.upvotes - a._count.upvotes)
+      );
+
+    } catch (err) {
+      toast.error("You have already upvoted the song", {
+        position: 'top-right',
+        duration: 3000,
+      });
     }
-    else if (increment == -1) {
+  } else if (increment === -1) {
+    try {
       const res = await axios.post('/api/streams/downvote', { streamId: id });
-      if (res.status != 201) {
-        console.error("Error downvoting the song");
-        return;
-      }
+      toast.success("Downvote recorded!", {
+        position: 'top-right',
+        duration: 2000,
+      });
+
+      setQueue(prevQueue =>
+        prevQueue.map(song =>
+          song.id === id ? { ...song, votes: song.votes - 1 } : song
+        ).sort((a, b) => b.votes - a.votes)
+      );
+      setAllStreams(prevAllStreams =>
+        prevAllStreams.map(song =>
+          song.id === id
+            ? {
+                ...song,
+                _count: {
+                  ...song._count,
+                  upvotes: song._count.upvotes - 1,
+                },
+              }
+            : song
+        ).sort((a, b) => b._count.upvotes - a._count.upvotes)
+      );
+
+    } catch (err) {
+      toast.error("You cannot downvote a song that you haven't upvoted", {
+        position: 'top-right',
+        duration: 3000,
+      });
     }
-    setQueue(prevQueue =>
-      prevQueue.map(song =>
-        song.id === id ? { ...song, votes: song.votes + increment } : song
-      ).sort((a, b) => b.votes - a.votes)
-    )
-    setAllStreams(prevallStreams => prevallStreams.map(song => song.id === id ? { ...song, _count: { ...song._count, upvotes: song._count.upvotes + increment } } : song).sort((a, b) => b._count.upvotes - a._count.upvotes));
-    console.log(queue)
-    console.log(all_streams);
   }
+}
+
 
 
 
   return (
-    <div className="container mx-auto p-4 space-y-8">
-      <h1 className="text-3xl font-bold text-center mb-8">Stream Song Voting</h1>
+    <div className="container mx-auto space-y-8">
+      <div className='flex justify-between items-center'>
+        <h1 className="text-3xl font-bold text-center">Stream Song Voting</h1>
+        <div>
+          <Button onClick={() => signOut({ callbackUrl: '/' })}>Log out</Button>
+          <Button className='m-10 w-xl' onClick={(e) => handleShare(e)}>Share</Button>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-8">
           {/* submit song component */}
@@ -308,7 +319,8 @@ export default function StreamView({
 
           {!url && (
             <div className="text-center mb-4">
-              <p>Loading...</p>
+              <p>Please add Some Songs .....</p>
+
             </div>
           )}
           {url != null && url?.length > 0 && (
@@ -316,7 +328,9 @@ export default function StreamView({
               <CardHeader>
                 <CardTitle>Currently Playing</CardTitle>
               </CardHeader>
+
               <CardContent>
+                {/*}
                 <iframe
                   width="100%"
                   height="315"
@@ -326,11 +340,35 @@ export default function StreamView({
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 ></iframe>
+                
+                */}
+                <YouTube
+                  videoId={url}
+                  opts={{
+                    width: '100%',
+                    height: '321',
+                    playerVars: {
+                      autoplay: 1,
+                      controls: 0,
+
+                    }
+                  }}
+                  onEnd={playNextVideo}
+                />
               </CardContent>
-              <Button className='m-10 w-xl' onClick={() => playNextVideo()}>Play next</Button>
-              <Button className='m-10 w-xl' onClick={(e) => handleShare(e)}>Share</Button>
+              <Button className='m-10 w-xl' onClick={() => {
+                var val = playNextVideo()
+                if (!val) {
+                  toast.error("No more videos in queue", {
+                    position: 'top-right',
+                    duration: 3000,
+                  });
+                }
+              }}>Play next</Button>
+
             </Card>
           )}
+
 
         </>
         <Toaster />

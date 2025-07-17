@@ -25,21 +25,21 @@ export async function POST(req: NextRequest) {
             })
         }
         //const session = await getServerSession();
-/*
-        const user = await prismaClient.user.findFirst({
-            where: {
-                email: session?.user?.email ?? ""
-            }
-        })
-        if (!user) {
-            return NextResponse.json({
-                message: "Unauthenticated"
-            }, {
-                status: 411
-            })
-        }
-            
-        */
+        /*
+                const user = await prismaClient.user.findFirst({
+                    where: {
+                        email: session?.user?.email ?? ""
+                    }
+                })
+                if (!user) {
+                    return NextResponse.json({
+                        message: "Unauthenticated"
+                    }, {
+                        status: 411
+                    })
+                }
+                    
+                */
         //const data = CreateStreamSchema.parse(await req.json());
         const data = await req.json();
         const isYt = data.url.match(urlRegex);
@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
             })
         }
 
-        const extractedId = data.url.split("?v=")[1];
+        const match = data.url.match(/[?&]v=([^&]+)/);
+        const extractedId = match ? match[1] : null;
         const dt = await youtubesearchapi.GetVideoDetails(extractedId);
         const title = dt.title;
         const length = dt.thumbnail.thumbnails.length;

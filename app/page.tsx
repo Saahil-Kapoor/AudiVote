@@ -41,7 +41,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="space-x-4">
-                <Button className="bg-white text-purple-600 hover:bg-purple-100">Get Started</Button>
+                <Button className="bg-white text-purple-600 hover:bg-purple-100" onClick={() => router.push('/dashboard')}>Get Started</Button>
                 <Button variant="outline" className="text-black border-white hover:bg-purple-700">Learn More</Button>
               </div>
             </div>
@@ -98,17 +98,7 @@ export default function Home() {
         </section>
       </main>
       <footer className="w-full py-6 bg-white dark:bg-gray-800 shadow-md mt-12">
-        <div className="container flex flex-col sm:flex-row justify-between items-center px-4 md:px-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">© 2024 MusicStream Inc. All rights reserved.</p>
-          <nav className="flex gap-4 sm:gap-6 mt-4 sm:mt-0">
-            <Link className="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors" href="#">
-              Terms of Service
-            </Link>
-            <Link className="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors" href="#">
-              Privacy Policy
-            </Link>
-          </nav>
-        </div>
+        
       </footer>
     </div>
     
