@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import StreamView from "../components/StreamView";
-import { useRouter, usePathname } from 'next/navigation';
 import axios from "axios";
 import { signIn, useSession } from "next-auth/react";
 

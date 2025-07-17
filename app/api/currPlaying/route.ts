@@ -1,5 +1,4 @@
 import { prismaClient } from "@/app/lib/db";
-import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -20,6 +19,7 @@ export async function POST(req: NextRequest) {
                 streamId: data.streamId,
             }
         });
+        console.log(currPlaying);
 
         return NextResponse.json({
             message: "Added Streams",

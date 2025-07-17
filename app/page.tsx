@@ -1,11 +1,8 @@
 'use client';
-import Image from "next/image";
 import Appbar from "../app/components/Appbar";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Music2, Headphones, Users, Zap } from 'lucide-react'
-import Link from "next/link"
-import Redirect from "./components/Redirect";
+import { Headphones, Users, Zap } from 'lucide-react'
 import { useEffect } from "react";
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation';

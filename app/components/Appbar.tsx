@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Music2} from 'lucide-react'
 
 import { signIn, signOut, useSession } from 'next-auth/react'

@@ -33,8 +33,6 @@ export default function StreamView({
   const [url, seturl] = useState<string | null>(null);
   const [all_streams, setAllStreams] = useState<any[]>([]);
   const [curr_state, setcurrstate] = useState<any>(null);
-  const session = useSession();
-  const router = useRouter();
 
   useEffect(() => {
     async function handle() {
@@ -82,7 +80,7 @@ export default function StreamView({
         console.log("New stream detected, updating state");
         
         prev.current = currentStream.extractedId;
-        const take = await axios.post(`/api/currPlaying/?creatorId=${creatorId}`, {
+        await axios.post(`/api/currPlaying/?creatorId=${creatorId}`, {
           url: currentStream.extractedId,
           streamId: currentStream.id
         });
@@ -132,7 +130,7 @@ export default function StreamView({
     const currStream = curr_state;
     console.log("Deleting stream:", currStream.streamId);
     const res = await axios.delete(`/api/streams/delete/?creatorId=${creatorId}`, { data: { id: currStream.streamId } })
-    const press = await axios.delete(`/api/currPlaying/?creatorId=${creatorId}`)
+    await axios.delete(`/api/currPlaying/?creatorId=${creatorId}`)
     if (res.status != 200) {
       console.error("Error deleting the stream");
       return;
@@ -199,7 +197,7 @@ export default function StreamView({
   const handleVote = async (id: string, increment: number) => {
     if (increment === 1) {
       try {
-        const res = await axios.post('/api/streams/upvote', { streamId: id });
+        await axios.post('/api/streams/upvote', { streamId: id });
         toast.success("Upvote recorded!", {
           position: 'top-right',
           duration: 2000,
@@ -225,6 +223,7 @@ export default function StreamView({
         );
 
       } catch (err) {
+        console.error("Error upvoting song:", err);
         toast.error("You have already upvoted the song", {
           position: 'top-right',
           duration: 3000,
@@ -232,7 +231,7 @@ export default function StreamView({
       }
     } else if (increment === -1) {
       try {
-        const res = await axios.post('/api/streams/downvote', { streamId: id });
+        await axios.post('/api/streams/downvote', { streamId: id });
         toast.success("Downvote recorded!", {
           position: 'top-right',
           duration: 2000,
@@ -258,6 +257,7 @@ export default function StreamView({
         );
 
       } catch (err) {
+        console.error("Error downvoting song:", err);
         toast.error("You cannot downvote a song that you haven't upvoted", {
           position: 'top-right',
           duration: 3000,

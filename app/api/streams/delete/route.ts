@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prismaClient } from '@/app/lib/db'
-import { getServerSession } from "next-auth/next";
 
 export async function DELETE(req: NextRequest) {
     //const session = await getServerSession();

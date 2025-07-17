@@ -1,9 +1,8 @@
 "use client"
 
-import { Router } from 'lucide-react';
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation';
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 
 export default function Redirect() {
   const session = useSession();
