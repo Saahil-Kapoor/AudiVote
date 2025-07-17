@@ -19,14 +19,14 @@ interface Song {
   imageUrl: string
 }
 
-const REFRESH_INTERVAL_MS =1000;
+const REFRESH_INTERVAL_MS = 2*1000;
 
 export default function StreamView({
   creatorId
 }: {
   creatorId: string
 }) {
-  const prev = useRef<string>("");
+  const prev = useRef<string>('');
   const [videoUrl, setVideoUrl] = useState('')
   const [videoId, setVideoId] = useState('')
   const [queue, setQueue] = useState<Song[]>([])
@@ -40,15 +40,54 @@ export default function StreamView({
     async function handle() {
       const interval = setInterval(async () => {
         const res = await axios.get(`/api/streams/?creatorId=${creatorId}`);
+        const variable = await axios.get(`/api/currPlaying/?creatorId=${creatorId}`);
+        if (variable == null || variable.data.streams == null) {
+          prev.current = '';
+        }
+        else {
+          prev.current = variable.data.streams.url;
+        }
         const all_stream = res.data.streams;
+        console.log("All streams:", all_stream);
         const newId = all_stream[0]?.extractedId;
         const currentStream = all_stream[0];
-
-        setcurrstate(currentStream);
-        if (newId && prev.current !== newId) {
-          prev.current = newId;
-          seturl(newId);
+        for (let i = 0; i < all_stream.length; i++) {
+          if (all_stream[i].extractedId == prev.current) {
+            console.log("Stream already playing, skipping update");
+            console.log("Previous stream ID:"+ prev.current);
+            console.log("Current stream ID:"+ all_stream[i].extractedId);
+            const newQueue = all_stream.length > 0
+              ? all_stream.filter((stream) => stream.extractedId !== prev.current).map(stream => ({
+                id: stream.id,
+                title: stream.title,
+                artist: stream.id,
+                votes: stream._count.upvotes,
+                imageUrl: stream.smallImg || '/placeholder.svg?height=80&width=80'
+              }))
+              : [];
+            setQueue(newQueue);
+            if(!url || url.length === 0 || url !== prev.current) {
+              const val = prev.current;
+              seturl(val);
+              setcurrstate(variable.data.streams);
+              setAllStreams(all_stream);
+            }
+            return;
+          }
         }
+        if(all_stream.length === 0) {
+          console.log("No streams available, skipping update");
+          return;
+        }
+        console.log("New stream detected, updating state");
+        
+        prev.current = currentStream.extractedId;
+        const take = await axios.post(`/api/currPlaying/?creatorId=${creatorId}`, {
+          url: currentStream.extractedId,
+          streamId: currentStream.id
+        });
+        setcurrstate(currentStream);
+        seturl(newId);
         const newQueue = all_stream.length > 0
           ? all_stream.slice(1).map(stream => ({
             id: stream.id,
@@ -84,8 +123,6 @@ export default function StreamView({
     }
   }
 
-
-
   const playNextVideo = async () => {
     console.log("This is queue", all_streams);
     if (all_streams.length == 0) {
@@ -93,19 +130,25 @@ export default function StreamView({
       return false;
     }
     const currStream = curr_state;
-    console.log("Deleting stream:", currStream.id);
-    const res = await axios.delete(`/api/streams/delete/?creatorId=${creatorId}`, { data: { id: currStream.id } })
+    console.log("Deleting stream:", currStream.streamId);
+    const res = await axios.delete(`/api/streams/delete/?creatorId=${creatorId}`, { data: { id: currStream.streamId } })
+    const press = await axios.delete(`/api/currPlaying/?creatorId=${creatorId}`)
     if (res.status != 200) {
       console.error("Error deleting the stream");
       return;
     }
-    setAllStreams(all_streams => all_streams.filter(stream => stream.id !== currStream.id));
+    setAllStreams(all_streams => all_streams.filter(stream => stream.id !== currStream.streamId));
     const curr = all_streams[1];
+
     setQueue(prevQueue => prevQueue.filter(song => song.id !== curr.id));
     if (curr) {
       seturl(curr.extractedId);
       setcurrstate(curr);
       console.log("Playing next video:", curr.extractedId);
+      axios.post(`/api/currPlaying/?creatorId=${creatorId}`, {
+        url: curr.extractedId,
+        streamId: curr.id
+      });
     } else {
       seturl(null);
       console.log("No more videos in queue");
@@ -154,74 +197,74 @@ export default function StreamView({
 
 
   const handleVote = async (id: string, increment: number) => {
-  if (increment === 1) {
-    try {
-      const res = await axios.post('/api/streams/upvote', { streamId: id });
-      toast.success("Upvote recorded!", {
-        position: 'top-right',
-        duration: 2000,
-      });
+    if (increment === 1) {
+      try {
+        const res = await axios.post('/api/streams/upvote', { streamId: id });
+        toast.success("Upvote recorded!", {
+          position: 'top-right',
+          duration: 2000,
+        });
 
-      setQueue(prevQueue =>
-        prevQueue.map(song =>
-          song.id === id ? { ...song, votes: song.votes + 1 } : song
-        ).sort((a, b) => b.votes - a.votes)
-      );
-      setAllStreams(prevAllStreams =>
-        prevAllStreams.map(song =>
-          song.id === id
-            ? {
+        setQueue(prevQueue =>
+          prevQueue.map(song =>
+            song.id === id ? { ...song, votes: song.votes + 1 } : song
+          ).sort((a, b) => b.votes - a.votes)
+        );
+        setAllStreams(prevAllStreams =>
+          prevAllStreams.map(song =>
+            song.id === id
+              ? {
                 ...song,
                 _count: {
                   ...song._count,
                   upvotes: song._count.upvotes + 1,
                 },
               }
-            : song
-        ).sort((a, b) => b._count.upvotes - a._count.upvotes)
-      );
+              : song
+          ).sort((a, b) => b._count.upvotes - a._count.upvotes)
+        );
 
-    } catch (err) {
-      toast.error("You have already upvoted the song", {
-        position: 'top-right',
-        duration: 3000,
-      });
-    }
-  } else if (increment === -1) {
-    try {
-      const res = await axios.post('/api/streams/downvote', { streamId: id });
-      toast.success("Downvote recorded!", {
-        position: 'top-right',
-        duration: 2000,
-      });
+      } catch (err) {
+        toast.error("You have already upvoted the song", {
+          position: 'top-right',
+          duration: 3000,
+        });
+      }
+    } else if (increment === -1) {
+      try {
+        const res = await axios.post('/api/streams/downvote', { streamId: id });
+        toast.success("Downvote recorded!", {
+          position: 'top-right',
+          duration: 2000,
+        });
 
-      setQueue(prevQueue =>
-        prevQueue.map(song =>
-          song.id === id ? { ...song, votes: song.votes - 1 } : song
-        ).sort((a, b) => b.votes - a.votes)
-      );
-      setAllStreams(prevAllStreams =>
-        prevAllStreams.map(song =>
-          song.id === id
-            ? {
+        setQueue(prevQueue =>
+          prevQueue.map(song =>
+            song.id === id ? { ...song, votes: song.votes - 1 } : song
+          ).sort((a, b) => b.votes - a.votes)
+        );
+        setAllStreams(prevAllStreams =>
+          prevAllStreams.map(song =>
+            song.id === id
+              ? {
                 ...song,
                 _count: {
                   ...song._count,
                   upvotes: song._count.upvotes - 1,
                 },
               }
-            : song
-        ).sort((a, b) => b._count.upvotes - a._count.upvotes)
-      );
+              : song
+          ).sort((a, b) => b._count.upvotes - a._count.upvotes)
+        );
 
-    } catch (err) {
-      toast.error("You cannot downvote a song that you haven't upvoted", {
-        position: 'top-right',
-        duration: 3000,
-      });
+      } catch (err) {
+        toast.error("You cannot downvote a song that you haven't upvoted", {
+          position: 'top-right',
+          duration: 3000,
+        });
+      }
     }
   }
-}
 
 
 
@@ -349,7 +392,7 @@ export default function StreamView({
                     height: '321',
                     playerVars: {
                       autoplay: 1,
-                      controls: 0,
+                      controls: 1,
 
                     }
                   }}
