@@ -229,7 +229,7 @@ export default function StreamView({
   return (
     <div className="container mx-auto space-y-8">
       <div className='flex justify-between items-center'>
-        <h1 className="text-3xl font-bold text-center">Stream Song Voting</h1>
+        <h1 className="text-3xl font-bold text-center">AudiVote</h1>
         <div>
           <Button onClick={() => signOut({ callbackUrl: '/' })}>Log out</Button>
           <Button className='m-10 w-xl' onClick={(e) => handleShare(e)}>Share</Button>
