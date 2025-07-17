@@ -27,7 +27,6 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800">
       <Appbar/>
-      
       <main className="flex-1">
         <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-purple-600 text-white">
           <div className="container px-4 md:px-6">
