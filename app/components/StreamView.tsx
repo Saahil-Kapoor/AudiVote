@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { toast, Toaster } from 'react-hot-toast'
 import { signOut} from 'next-auth/react'
 import YouTube from 'react-youtube';
+import { currPlaying, Prisma } from '@prisma/client'
 
 interface Song {
   id: string
@@ -17,8 +18,20 @@ interface Song {
   votes: number
   imageUrl: string
 }
+type StreamWithUpvotes = Prisma.StreamGetPayload<{
+  include: {
+    upvotes: true;
+    _count: {
+      select: { upvotes: true };
+    };
+  };
+}>;
+function isStreamWithUpvotes(stream: StreamWithUpvotes | currPlaying): stream is StreamWithUpvotes {
+  return 'upvotes' in stream;
+}
 
-const REFRESH_INTERVAL_MS = 2*1000;
+
+const REFRESH_INTERVAL_MS = 3*1000;
 
 export default function StreamView({
   creatorId
@@ -30,8 +43,8 @@ export default function StreamView({
   const [videoId, setVideoId] = useState('')
   const [queue, setQueue] = useState<Song[]>([])
   const [url, seturl] = useState<string | null>(null);
-  const [all_streams, setAllStreams] = useState<any[]>([]);
-  const [curr_state, setcurrstate] = useState<any>(null);
+  const [all_streams, setAllStreams] = useState<StreamWithUpvotes[]>([]);
+  const [curr_state, setcurrstate] = useState<StreamWithUpvotes|currPlaying>(null);
 
   useEffect(() => {
     async function handle() {
@@ -127,14 +140,21 @@ export default function StreamView({
       return false;
     }
     const currStream = curr_state;
-    console.log("Deleting stream:", currStream.streamId);
-    const res = await axios.delete(`/api/streams/delete/?creatorId=${creatorId}`, { data: { id: currStream.streamId } })
+    let streamId = '';
+    if(!isStreamWithUpvotes(currStream)) {
+      streamId= currStream.streamId;
+    }
+    else if(isStreamWithUpvotes(currStream)){
+      streamId= currStream.id;
+    }
+    console.log("Deleting stream:", streamId);
+    const res = await axios.delete(`/api/streams/delete/?creatorId=${creatorId}`, { data: { id: streamId } })
     await axios.delete(`/api/currPlaying/?creatorId=${creatorId}`)
     if (res.status != 200) {
       console.error("Error deleting the stream");
       return;
     }
-    setAllStreams(all_streams => all_streams.filter(stream => stream.id !== currStream.streamId));
+    setAllStreams(all_streams => all_streams.filter(stream => stream.id !== streamId));
     const curr = all_streams[1];
 
     setQueue(prevQueue => prevQueue.filter(song => song.id !== curr.id));
@@ -399,7 +419,7 @@ export default function StreamView({
                 />
               </CardContent>
               <Button className='m-10 w-xl' onClick={() => {
-                let val = playNextVideo()
+                const val = playNextVideo()
                 if (!val) {
                   toast.error("No more videos in queue", {
                     position: 'top-right',

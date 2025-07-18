@@ -10,7 +10,7 @@ import { signIn, useSession } from "next-auth/react";
 
 export default function Home() {
   const [creatorId, setCreatorId] = useState<string>("");
-  const { data: _session, status } = useSession();
+  const { status } = useSession();
   useEffect(() => {
     if (status === 'unauthenticated') {
       signIn();
