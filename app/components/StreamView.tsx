@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -116,7 +116,7 @@ export default function StreamView({
   }, []);
 
 
-  const handleShare = (e: any) => {
+  const handleShare = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     const shareableLink = `${window.location.host}/creator/${creatorId}`
     if (navigator.clipboard && navigator.clipboard.writeText) {
