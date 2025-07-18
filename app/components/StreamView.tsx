@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import { toast, Toaster } from 'react-hot-toast'
-import { signOut, useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation';
+import { signOut} from 'next-auth/react'
 import YouTube from 'react-youtube';
 
 interface Song {
@@ -400,7 +399,7 @@ export default function StreamView({
                 />
               </CardContent>
               <Button className='m-10 w-xl' onClick={() => {
-                var val = playNextVideo()
+                let val = playNextVideo()
                 if (!val) {
                   toast.error("No more videos in queue", {
                     position: 'top-right',

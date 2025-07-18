@@ -33,6 +33,7 @@ export async function DELETE(req: NextRequest) {
     try {
         body = await req.json()
     } catch (err) {
+        console.error("Error parsing JSON body:", err)
         return NextResponse.json(
             { message: 'Invalid JSON body' },
             { status: 400 }

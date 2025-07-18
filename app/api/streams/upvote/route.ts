@@ -36,6 +36,7 @@ export async function POST(req:NextRequest){
             message:"Upvoted successfully"
         }, { status: 201 });
     }catch(e){
+        console.error("Error upvoting stream:", e);
         return NextResponse.json({
             message:"Error while upvoting"
         },{

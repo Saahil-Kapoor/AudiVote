@@ -10,7 +10,7 @@ import { use } from 'react';
 type Params = { creatorId: string };
 
 
-export default function ({ params }: { params: Promise<Params> }) {
+export default function CreatorStreamPage({ params }: { params: Promise<Params> }) {
   const { creatorId } = use(params);
   const {status} = useSession();
   useEffect(() => {

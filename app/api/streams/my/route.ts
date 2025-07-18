@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {prismaClient} from '@/app/lib/db'
 import { getServerSession } from "next-auth/next";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     const session = await getServerSession();
 
     const user = await prismaClient.user.findFirst({
