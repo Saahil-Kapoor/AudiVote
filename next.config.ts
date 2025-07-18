@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
 
 module.exports = {
   images:{
-    domains: ['i.ytimg.com'],
+    domains: ['i.ytimg.com', "drive.google.com"],
   }
 };
 
