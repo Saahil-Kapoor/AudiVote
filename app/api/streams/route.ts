@@ -47,9 +47,19 @@ export async function POST(req: NextRequest) {
         const dt = await youtubesearchapi.GetVideoDetails(extractedId);
         console.log(dt);
         const title = dt.title;
-        const length = dt.thumbnail.thumbnails.length;
-        const smallImg = dt.thumbnail.thumbnails[length - 2].url;
-        const bigImg = dt.thumbnail.thumbnails[length - 1].url;
+        let smallImg = "";
+        let bigImg = "";
+        if(dt.thumbnail === undefined || dt.thumbnail.thumbnails.length < 2) {
+            smallImg = "https://drive.google.com/file/d/1moFlzTi48bwpiOmVIW8vPkrjCowQYH1r/view?usp=sharing";
+            bigImg = "https://drive.google.com/file/d/1moFlzTi48bwpiOmVIW8vPkrjCowQYH1r/view?usp=sharing";
+            console.error("Thumbnail not found, using default image");
+        }
+        else{
+            const length = dt.thumbnail.thumbnails.length;
+            smallImg = dt.thumbnail.thumbnails[length - 2].url;
+            bigImg = dt.thumbnail.thumbnails[length - 1].url;
+        }
+        
         const stream = await prismaClient.stream.create({
             data: {
                 userId: creatorId ?? '',
