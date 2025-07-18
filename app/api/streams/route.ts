@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
         const match = data.url.match(/[?&]v=([^&]+)/);
         const extractedId = match ? match[1] : null;
         const dt = await youtubesearchapi.GetVideoDetails(extractedId);
+        console.log(dt);
         const title = dt.title;
         const length = dt.thumbnail.thumbnails.length;
         const smallImg = dt.thumbnail.thumbnails[length - 2].url;
